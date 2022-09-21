@@ -1,4 +1,4 @@
-# dawdler-mybatis-generator-core
+# srpingboot-mybatis-generator-core
 
 ## 模块介绍
 
