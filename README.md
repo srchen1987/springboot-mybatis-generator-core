@@ -87,7 +87,6 @@ springboot-mybatis-generator-core 是基于mybatis-generator-core进行二次开
   | serviceProject | service项目(java项目名,或绝对路径) |
   | loadWebProject | loadWeb项目(java项目名,或绝对路径) |
   | webProject | web项目(java项目名,或绝对路径) |
-  | chanelGroupId | 服务模块名用于生成@@FeignClient("服务模块名") |
   | targetPackageController | controller包名 |
   | targetPackageService | service接口包名 |
   | targetPackageServiceImpl | service实现层包名 |
