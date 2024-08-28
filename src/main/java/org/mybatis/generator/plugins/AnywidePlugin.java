@@ -147,11 +147,11 @@ public class AnywidePlugin extends PluginAdapter {
 		requestMethodType = new FullyQualifiedJavaType(
 			 "org.springframework.web.bind.annotation.RequestMethod");
 
-		pageResultType = new FullyQualifiedJavaType("com.anywide.dawdler.clientplug.web.result.PageResult");
+		pageResultType = new FullyQualifiedJavaType("com.anywide.dawdler.core.result.PageResult");
 		pojoListType = new FullyQualifiedJavaType("List");
 		pojoListType.addTypeArgument(pojoType);
 		pageResultType.addTypeArgument(pojoListType);
-		baseResultType = new FullyQualifiedJavaType("com.anywide.dawdler.clientplug.web.result.BaseResult");
+		baseResultType = new FullyQualifiedJavaType("com.anywide.dawdler.core.result.BaseResult");
 
 //		if (controllerPack.length() > (controllerPack.indexOf("controller") + "controller".length())) {
 //			prefix = controllerPack.substring(controllerPack.indexOf("controller") + "controller".length())
@@ -274,7 +274,7 @@ public class AnywidePlugin extends PluginAdapter {
 		sb.append("PageResult<");
 		sb.append(pojoListType.getShortName());
 		sb.append("> ");
-		sb.append("pageResult = new PageResult<>(" + listName + ", page, true);");
+		sb.append("pageResult = new PageResult<>(" + listName + ", page);");
 		sb.append("\n        ");
 		sb.append("return pageResult;");
 		method.addBodyLine(sb.toString());
@@ -554,7 +554,6 @@ public class AnywidePlugin extends PluginAdapter {
 	private String getDaoShort() {
 		return toLowerCase(daoType.getShortName()) + ".";
 	}
-
 	@Override
 	public List<GeneratedXmlFile> contextGenerateAdditionalXmlFiles(IntrospectedTable introspectedTable) {
 		if (!enableValidator)
@@ -564,11 +563,14 @@ public class AnywidePlugin extends PluginAdapter {
 		String fileName = tableName + "Controller-validator.xml";
 		Document document = new Document();
 		XmlElement root = new XmlElement("validator");
+		root.addAttribute(new Attribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"));
+		root.addAttribute(new Attribute("xmlns", XmlConstants.ANYWIDE_CONTROLLER_XMLNS));
 		if (this.schemaLocation != null && !"".equals(this.schemaLocation)) {
-			root.addAttribute(new Attribute("xmlns:xsi", XmlConstants.ANYWIDE_CONTROLLER_XMLNS));
-			root.addAttribute(new Attribute("xmlns", XmlConstants.ANYWIDE_CONTROLLER_XMLNS));
 			root.addAttribute(new Attribute("xsi:schemaLocation",
 					XmlConstants.ANYWIDE_CONTROLLER_XMLNS + " " + this.schemaLocation));
+		}else {
+			root.addAttribute(new Attribute("xsi:schemaLocation",
+					XmlConstants.ANYWIDE_CONTROLLER_XMLNS + "  https://cdn.jsdelivr.net/gh/srchen1987/dawdler-series-xsd@main/controller-validator.xsd"));
 		}
 		XmlElement vfs = new XmlElement("validator-fields");
 		for (IntrospectedColumn column : introspectedTable.getAllColumns()) {
@@ -601,7 +603,7 @@ public class AnywidePlugin extends PluginAdapter {
 		if (introspectedTable.hasPrimaryKeyColumns()) {
 			for (IntrospectedColumn column : introspectedTable.getBaseColumns()) {
 				XmlElement v = new XmlElement("validator");
-				v.addAttribute(new Attribute("ref", column.getActualColumnName()));
+				v.addAttribute(new Attribute("ref", column.getJavaProperty()));
 				vf.addElement(v);
 			}
 		} else {
@@ -612,7 +614,7 @@ public class AnywidePlugin extends PluginAdapter {
 					continue;
 				}
 				XmlElement v = new XmlElement("validator");
-				v.addAttribute(new Attribute("ref", column.getActualColumnName()));
+				v.addAttribute(new Attribute("ref", column.getJavaProperty()));
 				vf.addElement(v);
 			}
 		}
@@ -715,7 +717,7 @@ public class AnywidePlugin extends PluginAdapter {
 		XmlElement vm = new XmlElement("validator-mapping");
 		vm.addAttribute(new Attribute("name", name));
 		if (isPrimaryKey) {
-			if (introspectedTable.getPrimaryKeyColumns().size() > 0) {
+			if (!introspectedTable.getPrimaryKeyColumns().isEmpty()) {
 				for (IntrospectedColumn column : introspectedTable.getPrimaryKeyColumns()) {
 					XmlElement v = new XmlElement("validator");
 					v.addAttribute(new Attribute("ref", column.getJavaProperty()));
@@ -759,7 +761,6 @@ public class AnywidePlugin extends PluginAdapter {
 	 */
 	private void addService(Interface _interface, IntrospectedTable introspectedTable, String tableName,
 			List<GeneratedJavaFile> files) {
-		_interface.addImportedType(autowiredAnnotationType);
 		_interface.addImportedType(listType);
 		_interface.addImportedType(serviceAnnotationType);
 		_interface.setVisibility(JavaVisibility.PUBLIC);
@@ -774,7 +775,6 @@ public class AnywidePlugin extends PluginAdapter {
 
 		if (this.enableInfo && isPrimaryKey) {
 			method = selectByPrimaryKey(introspectedTable, tableName);
-			// method.removeAllBodyLines();
 			method.getBodyLines().clear();
 			method.setAbstract(true);
 			context.getCommentGenerator().addGeneralMethodComment(method, introspectedTable);
@@ -782,7 +782,6 @@ public class AnywidePlugin extends PluginAdapter {
 		}
 		if (this.enableList) {
 			method = selectPageList(introspectedTable, tableName);
-			// method.removeAllBodyLines();
 			method.getBodyLines().clear();
 			method.setAbstract(true);
 			context.getCommentGenerator().addGeneralMethodComment(method, introspectedTable);
@@ -790,15 +789,13 @@ public class AnywidePlugin extends PluginAdapter {
 		}
 		if (this.enableUpdate && isPrimaryKey) {
 			method = getOtherInteger("updateByPrimaryKeySelective", introspectedTable, tableName, 1);
-			// method.removeAllBodyLines();
 			method.getBodyLines().clear();
 			method.setAbstract(true);
 			context.getCommentGenerator().addGeneralMethodComment(method, introspectedTable);
 			_interface.addMethod(method);
 		}
 		if (this.enableInsert) {
-			method = getOtherInsertboolean("insertSelective", introspectedTable, tableName);
-			// method.removeAllBodyLines();
+			method = getOtherInsertBoolean("insertSelective", introspectedTable, tableName);
 			method.getBodyLines().clear();
 			method.setAbstract(true);
 			context.getCommentGenerator().addGeneralMethodComment(method, introspectedTable);
@@ -806,7 +803,6 @@ public class AnywidePlugin extends PluginAdapter {
 		}
 		if (this.enableDelete && isPrimaryKey) {
 			method = getOtherInteger("deleteByPrimaryKey", introspectedTable, tableName, 2);
-			// method.removeAllBodyLines();
 			method.getBodyLines().clear();
 			method.setAbstract(true);
 			context.getCommentGenerator().addGeneralMethodComment(method, introspectedTable);
@@ -857,7 +853,7 @@ public class AnywidePlugin extends PluginAdapter {
 			topLevelClass.addMethod(method);
 		}
 		if (this.enableInsert) {
-			method = getOtherInsertboolean("insertSelective", introspectedTable, tableName);
+			method = getOtherInsertBoolean("insertSelective", introspectedTable, tableName);
 			method.addAnnotation("@Override");
 			method.addAnnotation("@Transactional");
 			topLevelClass.addMethod(method);
@@ -967,7 +963,7 @@ public class AnywidePlugin extends PluginAdapter {
 		return method;
 	}
 
-	private Method getOtherInsertboolean(String methodName, IntrospectedTable introspectedTable, String tableName) {
+	private Method getOtherInsertBoolean(String methodName, IntrospectedTable introspectedTable, String tableName) {
 		Method method = new Method(methodName);
 		method.setReturnType(FullyQualifiedJavaType.getIntInstance());
 		method.addParameter(new Parameter(pojoType, toLowerCase(tableName)));

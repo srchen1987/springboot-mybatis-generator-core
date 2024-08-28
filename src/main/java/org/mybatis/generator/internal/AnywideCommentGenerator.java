@@ -218,11 +218,6 @@ public class AnywideCommentGenerator implements CommentGenerator {
 		StringBuilder sb = new StringBuilder();
 		method.addJavaDocLine("/** "); //$NON-NLS-1$
 		method.addJavaDocLine(" * ");
-		sb.append(" * @Title ");
-		sb.append(method.getName());
-		method.addJavaDocLine(sb.toString());
-		sb.setLength(0);
-		sb.append(" * @Description ");
 		if (prefix != null)
 			sb.append(prefix);
 		if (introspectedTable.getRemarks() != null && !"".equals(introspectedTable.getRemarks().trim())) {
