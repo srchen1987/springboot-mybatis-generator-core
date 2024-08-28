@@ -837,31 +837,31 @@ public class AnywidePlugin extends PluginAdapter {
 		if (this.enableInfo && isPrimaryKey) {
 			method = selectByPrimaryKey(introspectedTable, tableName);
 			method.addAnnotation("@Override");
-			method.addAnnotation("@Transactional");
+			method.addAnnotation("@Transactional(rollbackFor = { Exception.class })");
 			topLevelClass.addMethod(method);
 		}
 		if (this.enableList) {
 			method = selectPageList(introspectedTable, tableName);
 			method.addAnnotation("@Override");
-			method.addAnnotation("@Transactional");
+			method.addAnnotation("@Transactional(rollbackFor = { Exception.class })");
 			topLevelClass.addMethod(method);
 		}
 		if (this.enableUpdate && isPrimaryKey) {
 			method = getOtherInteger("updateByPrimaryKeySelective", introspectedTable, tableName, 1);
 			method.addAnnotation("@Override");
-			method.addAnnotation("@Transactional");
+			method.addAnnotation("@Transactional(rollbackFor = { Exception.class })");
 			topLevelClass.addMethod(method);
 		}
 		if (this.enableInsert) {
 			method = getOtherInsertBoolean("insertSelective", introspectedTable, tableName);
 			method.addAnnotation("@Override");
-			method.addAnnotation("@Transactional");
+			method.addAnnotation("@Transactional(rollbackFor = { Exception.class })");
 			topLevelClass.addMethod(method);
 		}
 		if (this.enableDelete && isPrimaryKey) {
 			method = getOtherInteger("deleteByPrimaryKey", introspectedTable, tableName, 2);
 			method.addAnnotation("@Override");
-			method.addAnnotation("@Transactional");
+			method.addAnnotation("@Transactional(rollbackFor = { Exception.class })");
 			topLevelClass.addMethod(method);
 		}
 
