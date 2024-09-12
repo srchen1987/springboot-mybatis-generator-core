@@ -766,9 +766,7 @@ public class AnywidePlugin extends PluginAdapter {
 	private void addService(Interface _interface, IntrospectedTable introspectedTable, String tableName,
 			List<GeneratedJavaFile> files) {
 		_interface.addImportedType(listType);
-		_interface.addImportedType(serviceAnnotationType);
 		_interface.setVisibility(JavaVisibility.PUBLIC);
-		_interface.addAnnotation("@Service");
 		// 添加方法
 		Method method = null;
 
@@ -827,9 +825,10 @@ public class AnywidePlugin extends PluginAdapter {
 	private void addServiceImpl(TopLevelClass topLevelClass, IntrospectedTable introspectedTable, String tableName,
 			List<GeneratedJavaFile> files) {
 		topLevelClass.setVisibility(JavaVisibility.PUBLIC);
+		topLevelClass.addImportedType(serviceAnnotationType);
+		topLevelClass.addAnnotation("@Service");
 		// 设置实现的接口
 		topLevelClass.addSuperInterface(serviceType);
-
 		topLevelClass.addImportedType(dBTransactionAnnotationType);
 
 		topLevelClass.addImportedType(autowiredAnnotationType);
