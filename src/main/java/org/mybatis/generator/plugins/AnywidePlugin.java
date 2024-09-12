@@ -37,8 +37,10 @@ public class AnywidePlugin extends PluginAdapter {
 
 	private FullyQualifiedJavaType controllerAnnotationType;
 	private FullyQualifiedJavaType requestMappingAnnotationType;
-	private FullyQualifiedJavaType responseBodyAnnotationType;
-	private FullyQualifiedJavaType requestMethodType;
+	private FullyQualifiedJavaType getMappingAnnotationType;
+	private FullyQualifiedJavaType postMappingAnnotationType;
+	private FullyQualifiedJavaType putMappingAnnotationType;
+	private FullyQualifiedJavaType deleteMappingAnnotationType;
 	private FullyQualifiedJavaType pageResultType;
 	private FullyQualifiedJavaType baseResultType;
 	private FullyQualifiedJavaType pojoListType;
@@ -109,10 +111,16 @@ public class AnywidePlugin extends PluginAdapter {
 
 		controllerAnnotationType = new FullyQualifiedJavaType(
 			 "org.springframework.web.bind.annotation.RestController");
-		responseBodyAnnotationType = new FullyQualifiedJavaType(
-			 "org.springframework.web.bind.annotation.ResponseBody");
 		requestMappingAnnotationType = new FullyQualifiedJavaType(
-			 "org.springframework.web.bind.annotation.RequestMapping");
+				"org.springframework.web.bind.annotation.RequestMapping");
+		getMappingAnnotationType = new FullyQualifiedJavaType(
+			"org.springframework.web.bind.annotation.GetMapping");
+		postMappingAnnotationType = new FullyQualifiedJavaType(
+				"org.springframework.web.bind.annotation.PostMapping");
+		putMappingAnnotationType = new FullyQualifiedJavaType(
+				"org.springframework.web.bind.annotation.PutMapping");
+		deleteMappingAnnotationType = new FullyQualifiedJavaType(
+					"org.springframework.web.bind.annotation.DeleteMapping");
 		autowiredAnnotationType = new FullyQualifiedJavaType(
 			 "org.springframework.beans.factory.annotation.Autowired");
 		dBTransactionAnnotationType = new FullyQualifiedJavaType(
@@ -137,15 +145,13 @@ public class AnywidePlugin extends PluginAdapter {
 		// dao
 		daoType = new FullyQualifiedJavaType(introspectedTable.getMyBatis3JavaMapperType());
 
-		pojoType = new FullyQualifiedJavaType(
-				pojoUrl + "." + tableName + (introspectedTable.getBLOBColumns().size() > 0 ? "WithBLOBs" : ""));
+		// pojoType = new FullyQualifiedJavaType(
+		// 		pojoUrl + "." + tableName + (!introspectedTable.getBLOBColumns().isEmpty() ? "WithBLOBs" : ""));
+		pojoType = new FullyQualifiedJavaType(pojoUrl + "." + tableName);
 		// 分页
 		pageType = new FullyQualifiedJavaType("com.anywide.dawdler.serverplug.load.bean.Page");
 		// list
 		listType = new FullyQualifiedJavaType("java.util.List");
-
-		requestMethodType = new FullyQualifiedJavaType(
-			 "org.springframework.web.bind.annotation.RequestMethod");
 
 		pageResultType = new FullyQualifiedJavaType("com.anywide.dawdler.core.result.PageResult");
 		pojoListType = new FullyQualifiedJavaType("List");
@@ -189,7 +195,8 @@ public class AnywidePlugin extends PluginAdapter {
 			List<GeneratedJavaFile> files) {
 
 		topLevelClass.setVisibility(JavaVisibility.PUBLIC);
-		topLevelClass.addAnnotation("@RestController(\"" + prefix + toLowerCase(tableName) + "\")");
+		topLevelClass.addAnnotation("@RestController");
+		topLevelClass.addAnnotation("@RequestMapping(\"" + prefix + toLowerCase(tableName) + "\")");
 		topLevelClass.addImportedType(controllerAnnotationType);
 		topLevelClass.addImportedType(autowiredAnnotationType);
 		// 添加引用service
@@ -250,8 +257,7 @@ public class AnywidePlugin extends PluginAdapter {
 		sb.append(viewListName);
 		Method method = new Method("list");
 		method.setVisibility(JavaVisibility.PUBLIC);
-		method.addAnnotation("@ResponseBody");
-		method.addAnnotation("@RequestMapping(value=\"" + sb + "\", method = RequestMethod.GET)");
+		method.addAnnotation("@GetMapping(\"" + sb + "\")");
 		method.addParameter(new Parameter(FullyQualifiedJavaType.getIntInstance(), "pageOn"));
 		method.addParameter(new Parameter(FullyQualifiedJavaType.getIntInstance(), "row"));
 		method.addParameter(new Parameter(pojoType, lowerFirstName));
@@ -294,13 +300,12 @@ public class AnywidePlugin extends PluginAdapter {
 		sb.append(viewDetailName);
 		Method method = new Method("info");
 		method.setVisibility(JavaVisibility.PUBLIC);
-		method.addAnnotation("@ResponseBody");
-		method.addAnnotation("@RequestMapping(value=\"" + sb + "\", method = RequestMethod.GET)");
+		method.addAnnotation("@GetMapping(\"" + sb + "\")");
 		FullyQualifiedJavaType baseResultType = new FullyQualifiedJavaType(this.baseResultType.getFullyQualifiedName());
 		baseResultType.addTypeArgument(pojoType);
 		method.setReturnType(baseResultType);
 		sb.setLength(0);
-		if (introspectedTable.getPrimaryKeyColumns().size() > 0) {
+		if (!introspectedTable.getPrimaryKeyColumns().isEmpty()) {
 			for (IntrospectedColumn introspectedColumn : introspectedTable.getPrimaryKeyColumns()) {
 				String variableType = introspectedColumn.getFullyQualifiedJavaType().getShortName();
 				method.addParameter(
@@ -313,15 +318,15 @@ public class AnywidePlugin extends PluginAdapter {
 		}
 		String variableName = toLowerCase(tableName);
 		sb.append(tableName);
-		if (introspectedTable.getBLOBColumns().size() > 0)
-			sb.append("WithBLOBs");
+		// if (!introspectedTable.getBLOBColumns().isEmpty())
+		// 	sb.append("WithBLOBs");
 		sb.append(" ");
 		sb.append(variableName);
 		sb.append(" = ");
 		sb.append(getServiceShort());
 		sb.append("selectByPrimaryKey");
 		sb.append("(");
-		if (introspectedTable.getPrimaryKeyColumns().size() > 0) {
+		if (!introspectedTable.getPrimaryKeyColumns().isEmpty()) {
 			for (IntrospectedColumn introspectedColumn : introspectedTable.getPrimaryKeyColumns()) {
 				sb.append(introspectedColumn.getJavaProperty());
 				sb.append(",");
@@ -349,8 +354,7 @@ public class AnywidePlugin extends PluginAdapter {
 		sb.append("update");
 		Method method = new Method("update");
 		method.setVisibility(JavaVisibility.PUBLIC);
-		method.addAnnotation("@ResponseBody");
-		method.addAnnotation("@RequestMapping(value=\"" + sb + "\", method = RequestMethod.POST)");
+		method.addAnnotation("@PutMapping(\"" + sb + "\")");
 		FullyQualifiedJavaType baseResultType = new FullyQualifiedJavaType(this.baseResultType.getFullyQualifiedName());
 		baseResultType.addTypeArgument(FullyQualifiedJavaType.getStringInstance());
 		method.setReturnType(baseResultType);
@@ -393,8 +397,7 @@ public class AnywidePlugin extends PluginAdapter {
 		sb.append("insert");
 		Method method = new Method("insert");
 		method.setVisibility(JavaVisibility.PUBLIC);
-		method.addAnnotation("@ResponseBody");
-		method.addAnnotation("@RequestMapping(value=\"" + sb + "\", method = RequestMethod.POST)");
+		method.addAnnotation("@PostMapping(\"" + sb + "\")");
 		FullyQualifiedJavaType baseResultType = new FullyQualifiedJavaType(this.baseResultType.getFullyQualifiedName());
 		baseResultType.addTypeArgument(FullyQualifiedJavaType.getStringInstance());
 		method.setReturnType(baseResultType);
@@ -436,13 +439,12 @@ public class AnywidePlugin extends PluginAdapter {
 		sb.append("delete");
 		Method method = new Method("delete");
 		method.setVisibility(JavaVisibility.PUBLIC);
-		method.addAnnotation("@ResponseBody");
-		method.addAnnotation("@RequestMapping(value=\"" + sb + "\", method = RequestMethod.POST)");
+		method.addAnnotation("@DeleteMapping(\"" + sb + "\")");
 		FullyQualifiedJavaType baseResultType = new FullyQualifiedJavaType(this.baseResultType.getFullyQualifiedName());
 		baseResultType.addTypeArgument(FullyQualifiedJavaType.getStringInstance());
 		method.setReturnType(baseResultType);
 		sb.setLength(0);
-		if (introspectedTable.getPrimaryKeyColumns().size() > 0) {
+		if (!introspectedTable.getPrimaryKeyColumns().isEmpty()) {
 			for (IntrospectedColumn introspectedColumn : introspectedTable.getPrimaryKeyColumns()) {
 				String variableType = introspectedColumn.getFullyQualifiedJavaType().getShortName();
 				method.addParameter(
@@ -460,7 +462,7 @@ public class AnywidePlugin extends PluginAdapter {
 		sb.append(getServiceShort());
 		sb.append("deleteByPrimaryKey");
 		sb.append("(");
-		if (introspectedTable.getPrimaryKeyColumns().size() > 0) {
+		if (!introspectedTable.getPrimaryKeyColumns().isEmpty()) {
 			for (IntrospectedColumn introspectedColumn : introspectedTable.getPrimaryKeyColumns()) {
 				sb.append(introspectedColumn.getJavaProperty());
 				sb.append(",");
@@ -541,10 +543,12 @@ public class AnywidePlugin extends PluginAdapter {
 		topLevelClass.addImportedType(pojoType);
 		topLevelClass.addImportedType(pageResultType);
 		topLevelClass.addImportedType(baseResultType);
-		topLevelClass.addImportedType(requestMethodType);
 		topLevelClass.addImportedType(controllerAnnotationType);
-		topLevelClass.addImportedType(responseBodyAnnotationType);
 		topLevelClass.addImportedType(requestMappingAnnotationType);
+		topLevelClass.addImportedType(getMappingAnnotationType);
+		topLevelClass.addImportedType(putMappingAnnotationType);
+		topLevelClass.addImportedType(deleteMappingAnnotationType);
+		topLevelClass.addImportedType(postMappingAnnotationType);
 	}
 
 	private String getServiceShort() {
@@ -890,8 +894,8 @@ public class AnywidePlugin extends PluginAdapter {
 		sb.append("\n        ");
 		sb.append("List<");
 		sb.append(tableName);
-		if (introspectedTable.getBLOBColumns().size() > 0)
-			sb.append("WithBLOBs");
+		// if (!introspectedTable.getBLOBColumns().isEmpty())
+		// 	sb.append("WithBLOBs");
 		sb.append("> ");
 		sb.append(listName);
 		sb.append(" = ");
@@ -911,7 +915,7 @@ public class AnywidePlugin extends PluginAdapter {
 	private Method selectByPrimaryKey(IntrospectedTable introspectedTable, String tableName) {
 		Method method = new Method("selectByPrimaryKey");
 		method.setReturnType(pojoType);
-		if (introspectedTable.getPrimaryKeyColumns().size() > 0) {
+		if (!introspectedTable.getPrimaryKeyColumns().isEmpty()) {
 			for (IntrospectedColumn introspectedColumn : introspectedTable.getPrimaryKeyColumns()) {
 				FullyQualifiedJavaType type = introspectedColumn.getFullyQualifiedJavaType();
 				method.addParameter(new Parameter(type, introspectedColumn.getJavaProperty()));
@@ -927,7 +931,7 @@ public class AnywidePlugin extends PluginAdapter {
 		sb.append(getDaoShort());
 		sb.append("selectByPrimaryKey");
 		sb.append("(");
-		if (introspectedTable.getPrimaryKeyColumns().size() > 0) {
+		if (!introspectedTable.getPrimaryKeyColumns().isEmpty()) {
 			if (introspectedTable.getPrimaryKeyColumns().size() == 1)
 				sb.append(introspectedTable.getPrimaryKeyColumns().get(0).getJavaProperty());
 			else
@@ -1062,7 +1066,7 @@ public class AnywidePlugin extends PluginAdapter {
 	private StringBuilder getParameter(IntrospectedTable introspectedTable, String tableName, String variableName,
 			int type) {
 		StringBuilder sb = new StringBuilder();
-		if (introspectedTable.getPrimaryKeyColumns().size() > 0) {
+		if (!introspectedTable.getPrimaryKeyColumns().isEmpty()) {
 			if (introspectedTable.getPrimaryKeyColumns().size() == 1) {
 				if (type == 2) {
 					sb.append(introspectedTable.getPrimaryKeyColumns().get(0).getJavaProperty());
